@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Upload CV - HR Analysis System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Welcome Section -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 text-primary mb-3">
+                <i class="fas fa-user-tie me-3"></i>HR Analysis System
+            </h1>
+            <p class="lead text-muted">AI-powered CV analysis and candidate evaluation tools</p>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="row mb-5">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow-sm border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-upload me-2"></i>Single CV Analysis
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">Analyze a single candidate's CV and generate a technical quiz for evaluation.</p>
+                        <h6>How it works:</h6>
+                        <ol class="small">
+                            <li>Upload the candidate's CV (PDF, DOC, DOCX, or TXT)</li>
+                            <li>AI analyzes the CV and generates a technical quiz</li>
+                            <li>Conduct the quiz with the candidate</li>
+                            <li>Upload their responses for AI evaluation</li>
+                            <li>Get detailed recommendations for next steps</li>
+                        </ol>
+                        <div class="d-grid">
+                            <a href="#single-cv-section" class="btn btn-primary">
+                                <i class="fas fa-arrow-down me-2"></i>Start Single CV Analysis
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow-sm border-info">
+                    <div class="card-header bg-info text-white">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-balance-scale me-2"></i>CV Comparison
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">Compare two CVs (e.g., LinkedIn vs ChatGPT generated) to identify differences and gaps.</p>
+                        <h6>Perfect for:</h6>
+                        <ul class="small">
+                            <li>Comparing LinkedIn CV with ChatGPT-generated CV</li>
+                            <li>Identifying discrepancies in work experience and dates</li>
+                            <li>Finding gaps in skills or projects</li>
+                            <li>Generating targeted interview questions</li>
+                            <li>Ensuring CV accuracy and completeness</li>
+                        </ul>
+                        <div class="d-grid">
+                            <a href="/compare" class="btn btn-info">
+                                <i class="fas fa-balance-scale me-2"></i>Start CV Comparison
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Single CV Analysis Section -->
+        <div id="single-cv-section" class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-upload me-2"></i>Upload Candidate CV
+                </h3>
+            </div>
+            <div class="card-body">
+
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="cv_file" class="form-label">Select CV File</label>
+                        <input type="file" class="form-control" id="cv_file" name="cv_file" 
+                               accept=".pdf,.doc,.docx,.txt" required>
+                        <div class="form-text">
+                            Supported formats: PDF, DOC, DOCX, TXT (Max 16MB)
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
+                            <i class="fas fa-upload me-2"></i>Upload & Analyze CV
+                        </button>
+                    </div>
+                </form>
+
+                <div id="loadingSpinner" class="text-center mt-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Analyzing CV and generating quiz...</p>
+                </div>
+
+                <div id="uploadError" class="alert alert-danger mt-3" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Start Guide -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-lightbulb me-2"></i>Quick Start Guide
+                </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">For Single CV Analysis:</h6>
+                        <p class="small text-muted">Use this when you have one CV and want to evaluate a candidate's technical skills through a generated quiz.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-info">For CV Comparison:</h6>
+                        <p class="small text-muted">Use this when you have two versions of a CV (e.g., from LinkedIn and ChatGPT) and want to identify differences and gaps.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CV Analysis Results Modal -->
+<div class="modal fade" id="analysisModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-line me-2"></i>CV Analysis Results
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="analysisContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="proceedToQuiz">
+                    <i class="fas fa-question-circle me-2"></i>Generate Quiz
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Smooth scrolling for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+
+// Add animation to cards on scroll
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+        }
+    });
+}, observerOptions);
+
+// Observe all cards
+document.querySelectorAll('.card').forEach(card => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(20px)';
+    card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(card);
+});
+
+document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    const fileInput = document.getElementById('cv_file');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const errorDiv = document.getElementById('uploadError');
+    
+    if (!fileInput.files[0]) {
+        showError('Please select a file to upload');
+        return;
+    }
+    
+    formData.append('cv_file', fileInput.files[0]);
+    
+    // Show loading state
+    uploadBtn.disabled = true;
+    loadingSpinner.style.display = 'block';
+    errorDiv.style.display = 'none';
+    
+    try {
+        const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Show analysis results
+            document.getElementById('analysisContent').innerHTML = 
+                '<pre class="bg-light p-3 rounded">' + result.analysis + '</pre>';
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('analysisModal'));
+            modal.show();
+        } else {
+            showError(result.error || 'Upload failed');
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    } finally {
+        uploadBtn.disabled = false;
+        loadingSpinner.style.display = 'none';
+    }
+});
+
+document.getElementById('proceedToQuiz').addEventListener('click', function() {
+    window.location.href = '/quiz';
+});
+
+function showError(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('uploadError').style.display = 'block';
+}
+</script>
+
+<style>
+/* Custom styles for the HR Analysis System */
+.display-4 {
+    font-weight: 300;
+}
+
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+.border-primary {
+    border-width: 2px !important;
+}
+
+.border-info {
+    border-width: 2px !important;
+}
+
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Feature cards specific styling */
+.feature-card {
+    min-height: 400px;
+}
+
+/* Loading animation */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.loading-pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Compare CVs - HR Analysis System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-balance-scale me-2"></i>Compare Two CVs
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5>How CV Comparison Works:</h5>
+                    <ol>
+                        <li>Upload two CV files (PDF, DOC, DOCX, or TXT)</li>
+                        <li>AI analyzes both CVs and identifies differences, gaps, and inconsistencies</li>
+                        <li>Get detailed comparison report with specific areas of concern</li>
+                        <li>Receive targeted questions to ask the candidate during interview</li>
+                        <li>Make informed decisions based on comprehensive analysis</li>
+                    </ol>
+                </div>
+
+                <form id="compareForm" enctype="multipart/form-data">
+                    <div class="row">
+                        <!-- CV 1 Upload Section -->
+                        <div class="col-md-6">
+                            <div class="card border-primary">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-file-alt me-2"></i>First CV
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="cv1_name" class="form-label">CV Name/Title</label>
+                                        <input type="text" class="form-control" id="cv1_name" name="cv1_name" 
+                                               placeholder="e.g., LinkedIn CV, Original CV" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="cv1_file" class="form-label">Select CV File</label>
+                                        <input type="file" class="form-control" id="cv1_file" name="cv1_file" 
+                                               accept=".pdf,.doc,.docx,.txt" required>
+                                        <div class="form-text">
+                                            Supported formats: PDF, DOC, DOCX, TXT (Max 16MB)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CV 2 Upload Section -->
+                        <div class="col-md-6">
+                            <div class="card border-success">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-file-alt me-2"></i>Second CV
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="cv2_name" class="form-label">CV Name/Title</label>
+                                        <input type="text" class="form-control" id="cv2_name" name="cv2_name" 
+                                               placeholder="e.g., Updated CV, ChatGPT CV" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="cv2_file" class="form-label">Select CV File</label>
+                                        <input type="file" class="form-control" id="cv2_file" name="cv2_file" 
+                                               accept=".pdf,.doc,.docx,.txt" required>
+                                        <div class="form-text">
+                                            Supported formats: PDF, DOC, DOCX, TXT (Max 16MB)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-info btn-lg" id="compareBtn">
+                            <i class="fas fa-balance-scale me-2"></i>Compare CVs
+                        </button>
+                    </div>
+                </form>
+
+                <div id="loadingSpinner" class="text-center mt-4" style="display: none;">
+                    <div class="spinner-border text-info" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Analyzing CVs and identifying differences...</p>
+                </div>
+
+                <div id="compareError" class="alert alert-danger mt-3" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Comparison Results Modal -->
+<div class="modal fade" id="comparisonModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-line me-2"></i>CV Comparison Results
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="comparisonContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="viewDetailedResults">
+                    <i class="fas fa-eye me-2"></i>View Detailed Results
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('compareForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    const cv1File = document.getElementById('cv1_file');
+    const cv2File = document.getElementById('cv2_file');
+    const cv1Name = document.getElementById('cv1_name');
+    const cv2Name = document.getElementById('cv2_name');
+    const compareBtn = document.getElementById('compareBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const errorDiv = document.getElementById('compareError');
+    
+    // Validate files
+    if (!cv1File.files[0] || !cv2File.files[0]) {
+        showError('Please select both CV files');
+        return;
+    }
+    
+    if (!cv1Name.value.trim() || !cv2Name.value.trim()) {
+        showError('Please provide names for both CVs');
+        return;
+    }
+    
+    // Prepare form data
+    formData.append('cv1_file', cv1File.files[0]);
+    formData.append('cv2_file', cv2File.files[0]);
+    formData.append('cv1_name', cv1Name.value.trim());
+    formData.append('cv2_name', cv2Name.value.trim());
+    
+    // Show loading state
+    compareBtn.disabled = true;
+    loadingSpinner.style.display = 'block';
+    errorDiv.style.display = 'none';
+    
+    try {
+        const response = await fetch('/upload_compare', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Display comparison results
+            displayComparisonResults(result);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('comparisonModal'));
+            modal.show();
+        } else {
+            showError(result.error || 'Comparison failed');
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    } finally {
+        compareBtn.disabled = false;
+        loadingSpinner.style.display = 'none';
+    }
+});
+
+document.getElementById('viewDetailedResults').addEventListener('click', function() {
+    window.location.href = '/comparison_results';
+});
+
+function displayComparisonResults(result) {
+    const content = document.getElementById('comparisonContent');
+    
+    let html = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-primary">Summary</h6>
+                <p class="text-muted">${result.summary.summary_text}</p>
+                <ul class="list-unstyled">
+                    <li><strong>Total Differences Found:</strong> ${result.summary.total_differences}</li>
+                    <li><strong>High Priority Issues:</strong> ${result.summary.high_priority_issues}</li>
+                    <li><strong>Categories Analyzed:</strong> ${result.summary.categories_analyzed.join(', ')}</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-success">Questions Generated</h6>
+                <p class="text-muted">${result.questions.length} targeted questions for interview</p>
+                <div class="d-grid">
+                    <button class="btn btn-outline-primary btn-sm" onclick="window.location.href='/comparison_results'">
+                        View All Questions
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add sample questions if available
+    if (result.questions && result.questions.length > 0) {
+        html += `
+            <hr>
+            <h6 class="text-info">Sample Questions:</h6>
+            <div class="row">
+        `;
+        
+        result.questions.slice(0, 3).forEach((question, index) => {
+            const priorityClass = question.priority === 'high' ? 'danger' : 
+                                 question.priority === 'medium' ? 'warning' : 'secondary';
+            html += `
+                <div class="col-md-4">
+                    <div class="card border-${priorityClass}">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <span class="badge bg-${priorityClass}">${question.priority}</span>
+                                ${question.category}
+                            </h6>
+                            <p class="card-text small">${question.question}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+            </div>
+            ${result.questions.length > 3 ? `<p class="text-muted mt-2">... and ${result.questions.length - 3} more questions</p>` : ''}
+        `;
+    }
+    
+    content.innerHTML = html;
+}
+
+function showError(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('compareError').style.display = 'block';
+}
+</script>
+{% endblock %}

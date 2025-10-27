@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}CV Comparison Results - HR Analysis System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-1">
+                                <i class="fas fa-balance-scale me-2"></i>CV Comparison Results
+                            </h2>
+                            <p class="mb-0">
+                                Comparing: <strong>{{ comparison_data.cv1_name }}</strong> vs <strong>{{ comparison_data.cv2_name }}</strong>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="/compare" class="btn btn-light me-2">
+                                <i class="fas fa-plus me-1"></i>New Comparison
+                            </a>
+                            <a href="/" class="btn btn-outline-light">
+                                <i class="fas fa-home me-1"></i>Home
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle fa-2x text-primary mb-2"></i>
+                    <h4 class="text-primary">{{ comparison_data.summary.total_differences }}</h4>
+                    <p class="text-muted mb-0">Total Differences</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-circle fa-2x text-danger mb-2"></i>
+                    <h4 class="text-danger">{{ comparison_data.summary.high_priority_issues }}</h4>
+                    <p class="text-muted mb-0">High Priority Issues</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-question-circle fa-2x text-success mb-2"></i>
+                    <h4 class="text-success">{{ comparison_data.questions|length }}</h4>
+                    <p class="text-muted mb-0">Questions Generated</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-tags fa-2x text-info mb-2"></i>
+                    <h4 class="text-info">{{ comparison_data.summary.categories_analyzed|length }}</h4>
+                    <p class="text-muted mb-0">Categories Analyzed</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Comparison Analysis -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Detailed Comparison Analysis
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if comparison_data.comparison_result.format == 'text' %}
+                        <pre class="bg-light p-3 rounded">{{ comparison_data.comparison_result.raw_analysis }}</pre>
+                    {% elif comparison_data.comparison_result.format == 'error' %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            {{ comparison_data.comparison_result.error }}
+                        </div>
+                    {% else %}
+                        <div class="comparison-analysis">
+                            {% for category, details in comparison_data.comparison_result.items() %}
+                                {% if category not in ['format', 'raw_analysis', 'error'] %}
+                                    <div class="mb-4">
+                                        <h6 class="text-primary">{{ category.replace('_', ' ').title() }}</h6>
+                                        <div class="bg-light p-3 rounded">
+                                            {% if details is string %}
+                                                <p>{{ details }}</p>
+                                            {% else %}
+                                                <ul class="mb-0">
+                                                    {% for item in details %}
+                                                        <li>{{ item }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-question-circle me-2"></i>Interview Questions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if comparison_data.questions %}
+                        <div class="questions-list">
+                            {% for question in comparison_data.questions %}
+                                <div class="question-item mb-3 p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <span class="badge bg-{% if question.priority == 'high' %}danger{% elif question.priority == 'medium' %}warning{% else %}secondary{% endif %}">
+                                            {{ question.priority }}
+                                        </span>
+                                        <small class="text-muted">{{ question.category }}</small>
+                                    </div>
+                                    <p class="mb-2">{{ question.question }}</p>
+                                    {% if question.context %}
+                                        <small class="text-muted">{{ question.context }}</small>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-info-circle fa-2x mb-2"></i>
+                            <p>No specific questions generated for this comparison.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="mb-3">Next Steps</h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary" onclick="printResults()">
+                            <i class="fas fa-print me-2"></i>Print Results
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="exportResults()">
+                            <i class="fas fa-download me-2"></i>Export as PDF
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="copyQuestions()">
+                            <i class="fas fa-copy me-2"></i>Copy Questions
+                        </button>
+                        <a href="/compare" class="btn btn-outline-primary">
+                            <i class="fas fa-plus me-2"></i>New Comparison
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Options</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Choose your export format:</p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="exportAsJSON()">
+                        <i class="fas fa-file-code me-2"></i>Export as JSON
+                    </button>
+                    <button class="btn btn-outline-success" onclick="exportAsPDF()">
+                        <i class="fas fa-file-pdf me-2"></i>Export as PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function printResults() {
+    window.print();
+}
+
+function exportResults() {
+    const modal = new bootstrap.Modal(document.getElementById('exportModal'));
+    modal.show();
+}
+
+function exportAsJSON() {
+    window.open(`/export/${session_id}`, '_blank');
+}
+
+function exportAsPDF() {
+    window.open(`/export_pdf/${session_id}`, '_blank');
+}
+
+function copyQuestions() {
+    const questions = {{ comparison_data.questions | tojson }};
+    let questionsText = "Interview Questions for CV Comparison:\n\n";
+    
+    questions.forEach((question, index) => {
+        questionsText += `${index + 1}. [${question.priority.toUpperCase()}] ${question.question}\n`;
+        if (question.context) {
+            questionsText += `   Context: ${question.context}\n`;
+        }
+        questionsText += "\n";
+    });
+    
+    navigator.clipboard.writeText(questionsText).then(() => {
+        // Show success message
+        const toast = document.createElement('div');
+        toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-check me-2"></i>Questions copied to clipboard!
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 3000);
+    }).catch(err => {
+        console.error('Failed to copy questions: ', err);
+        alert('Failed to copy questions to clipboard');
+    });
+}
+
+// Auto-expand text areas
+document.addEventListener('DOMContentLoaded', function() {
+    const textAreas = document.querySelectorAll('textarea');
+    textAreas.forEach(textArea => {
+        textArea.style.height = 'auto';
+        textArea.style.height = textArea.scrollHeight + 'px';
+    });
+});
+</script>
+
+<style>
+@media print {
+    .btn, .card-header, .modal, .toast {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+    
+    .question-item {
+        border: 1px solid #ccc !important;
+        margin-bottom: 10px !important;
+    }
+}
+
+.question-item {
+    transition: all 0.3s ease;
+}
+
+.question-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.comparison-analysis h6 {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+}
+</style>
+{% endblock %}

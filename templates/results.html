@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluation Results - HR Analysis System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Header -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Candidate Evaluation Results
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="text-primary">Overall Recommendation</h5>
+                        <div class="alert alert-{{ 'success' if evaluation.recommendation and 'hire' in evaluation.recommendation.lower() else 'warning' if evaluation.recommendation and 'review' in evaluation.recommendation.lower() else 'danger' }}">
+                            <strong>{{ evaluation.recommendation or 'Review Manually' }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="text-primary">Technical Level</h5>
+                        <div class="alert alert-secondary">
+                            <strong>{{ evaluation.technical_level or 'Unknown' }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Evaluation -->
+        <div class="card shadow mb-4">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>Detailed Analysis
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if evaluation.raw_evaluation %}
+                <div class="mb-3">
+                    <h6 class="text-primary">AI Analysis:</h6>
+                    <div class="bg-light p-3 rounded">
+                        <pre style="white-space: pre-wrap; font-family: inherit;">{{ evaluation.raw_evaluation }}</pre>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if evaluation %}
+                <div class="row">
+                    {% if evaluation.technical_assessment %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-primary">Technical Assessment:</h6>
+                        <p>{{ evaluation.technical_assessment }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if evaluation.soft_skills_assessment %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-success">Soft Skills Assessment:</h6>
+                        <p>{{ evaluation.soft_skills_assessment }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if evaluation.interview_focus_areas %}
+                    <div class="col-12 mb-3">
+                        <h6 class="text-warning">Interview Focus Areas:</h6>
+                        <p>{{ evaluation.interview_focus_areas }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- CV Analysis Summary -->
+        {% if analysis %}
+        <div class="card shadow mb-4">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-file-alt me-2"></i>CV Analysis Summary
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="bg-light p-3 rounded">
+                    <pre style="white-space: pre-wrap; font-family: inherit;">{{ analysis }}</pre>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quiz Questions Reference -->
+        {% if quiz %}
+        <div class="card shadow mb-4">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-question-circle me-2"></i>Quiz Questions Asked
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Technical Questions:</h6>
+                        <ol>
+                            {% for question in quiz.technical_questions %}
+                            <li class="mb-2">{{ question }}</li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-success">Soft Skills Questions:</h6>
+                        <ol>
+                            {% for question in quiz.soft_skills_questions %}
+                            <li class="mb-2">{{ question }}</li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Export Options -->
+        <div class="card shadow mb-4">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-download me-2"></i>Export Results
+                </h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">Download the complete evaluation report for your records or to share with team members.</p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="{{ url_for('export_results', session_id=session_id) }}" class="btn btn-success me-md-2">
+                        <i class="fas fa-file-code me-2"></i>Export as JSON
+                    </a>
+                    <a href="{{ url_for('export_pdf', session_id=session_id) }}" class="btn btn-info me-md-2">
+                        <i class="fas fa-file-pdf me-2"></i>Export as HTML Report
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>Print Results
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="card shadow">
+            <div class="card-body text-center">
+                <h5 class="mb-3">Next Steps</h5>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="{{ url_for('new_candidate') }}" class="btn btn-primary btn-lg me-md-2">
+                        <i class="fas fa-plus me-2"></i>Evaluate Another Candidate
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="history.back()">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Quiz
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-scroll to top when page loads
+window.scrollTo(0, 0);
+
+// Add some visual enhancements
+document.addEventListener('DOMContentLoaded', function() {
+    // Add animation to cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Technical Quiz - HR Analysis System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-question-circle me-2"></i>Technical Quiz for Candidate
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Instructions for HR:</strong> Ask these questions to the candidate and record their responses below. 
+                    The AI will analyze their answers and provide hiring recommendations.
+                </div>
+
+                <form id="quizForm">
+                    <!-- Technical Questions -->
+                    <div class="mb-4">
+                        <h4 class="text-primary">
+                            <i class="fas fa-code me-2"></i>Technical Questions
+                        </h4>
+                        {% for question in quiz.technical_questions %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ loop.index }}. {{ question }}</label>
+                            <textarea class="form-control" name="technical[q{{ loop.index }}]" 
+                                    rows="3" placeholder="Candidate's response..."></textarea>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Soft Skills Questions -->
+                    <div class="mb-4">
+                        <h4 class="text-success">
+                            <i class="fas fa-users me-2"></i>Soft Skills Questions
+                        </h4>
+                        {% for question in quiz.soft_skills_questions %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ loop.index }}. {{ question }}</label>
+                            <textarea class="form-control" name="soft_skills[sq{{ loop.index }}]" 
+                                    rows="3" placeholder="Candidate's response..."></textarea>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-outline-secondary me-md-2" onclick="history.back()">
+                            <i class="fas fa-arrow-left me-2"></i>Back
+                        </button>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-chart-bar me-2"></i>Evaluate Responses
+                        </button>
+                    </div>
+                </form>
+
+                <div id="loadingSpinner" class="text-center mt-4" style="display: none;">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Analyzing responses and generating recommendations...</p>
+                </div>
+
+                <div id="evaluationError" class="alert alert-danger mt-3" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('quizForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const responses = {};
+    
+    // Collect technical responses
+    const technicalInputs = document.querySelectorAll('textarea[name^="technical"]');
+    responses.technical = {};
+    technicalInputs.forEach(input => {
+        const name = input.name.match(/\[(.*?)\]/)[1];
+        responses.technical[name] = input.value.trim();
+    });
+    
+    // Collect soft skills responses
+    const softSkillsInputs = document.querySelectorAll('textarea[name^="soft_skills"]');
+    responses.soft_skills = {};
+    softSkillsInputs.forEach(input => {
+        const name = input.name.match(/\[(.*?)\]/)[1];
+        responses.soft_skills[name] = input.value.trim();
+    });
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const errorDiv = document.getElementById('evaluationError');
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    loadingSpinner.style.display = 'block';
+    errorDiv.style.display = 'none';
+    
+    try {
+        const response = await fetch('/evaluate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ responses: responses })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Redirect to results page
+            window.location.href = '/results';
+        } else {
+            showError(result.error || 'Evaluation failed');
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        loadingSpinner.style.display = 'none';
+    }
+});
+
+function showError(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('evaluationError').style.display = 'block';
+}
+</script>
+{% endblock %}
