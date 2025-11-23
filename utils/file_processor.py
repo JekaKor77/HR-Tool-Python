@@ -1,12 +1,13 @@
 import os
 import uuid
 from werkzeug.utils import secure_filename
-from config import Config
+from app_config import settings
+
 
 class FileProcessor:
     def __init__(self):
-        self.upload_folder = Config.UPLOAD_FOLDER
-        self.allowed_extensions = Config.ALLOWED_EXTENSIONS
+        self.upload_folder = settings.UPLOAD_FOLDER
+        self.allowed_extensions = settings.ALLOWED_EXTENSIONS
     
     def allowed_file(self, filename):
         """Check if file extension is allowed"""

@@ -95,7 +95,18 @@ function clearSavedForm(formId) {
 }
 
 // Initialize page
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async () => {
+
+    let token = sessionStorage.getItem("access_token");
+    if (!token) {
+        token = await tryRefreshToken();
+    }
+
+    if (!token) {
+        window.location.replace("/auth");
+        return;
+    }
+
     // Add fade-in animation to main content
     const mainContent = document.querySelector('main .container');
     if (mainContent) {
@@ -118,6 +129,11 @@ document.addEventListener('DOMContentLoaded', function() {
             clearSavedForm('quizForm');
         });
     }
+
+    setInterval(() => {
+        tryRefreshToken();
+    }, 10 * 60 * 1000);
+
 });
 
 // Global error handler
@@ -131,3 +147,59 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Unhandled promise rejection:', e.reason);
     showAlert('An unexpected error occurred. Please try again.', 'danger');
 });
+
+function getCSRFToken() {
+    const name = "csrf_token=";
+    const parts = document.cookie.split(";");
+    for (let p of parts) {
+        const c = p.trim();
+        if (c.startsWith(name)) return c.substring(name.length);
+    }
+    return null;
+}
+
+async function tryRefreshToken() {
+    const csrf = getCSRFToken();
+
+    const res = await fetch("/refresh", {
+        method: "POST",
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            ...(csrf ? { "X-CSRF-TOKEN": csrf } : {})
+        }
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    if (data.access_token) {
+        window.__access_token = data.access_token;
+        return data.access_token;
+    }
+
+    return null;
+}
+
+async function authFetch(url, options = {}) {
+    if (!options.headers) options.headers = {};
+
+    if (window.__access_token) {
+        options.headers["Authorization"] = "Bearer " + window.__access_token;
+    }
+
+    let response = await fetch(url, options);
+
+    if (response.status === 401) {
+        const newToken = await tryRefreshToken();
+
+        if (newToken) {
+            options.headers["Authorization"] = "Bearer " + newToken;
+            response = await fetch(url, options);
+        } else {
+            window.location.href = "/auth";
+            return;
+        }
+    }
+
+    return response;
+}

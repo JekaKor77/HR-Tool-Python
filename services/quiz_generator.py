@@ -1,72 +1,29 @@
-import openai
-from config import Config
+from prompts.quiz_prompts import quiz_prompt, quiz_system_prompt
+from services.base_service import BaseOpenAIService
 
-class QuizGenerator:
-    def __init__(self):
-        openai.api_key = Config.OPENAI_API_KEY
-        self.client = openai.OpenAI(api_key=Config.OPENAI_API_KEY)
+
+class QuizGenerator(BaseOpenAIService):
     
     def generate_quiz(self, cv_text):
         """
         Generate technical quiz and soft skills questions based on CV
         """
-        prompt = f"""
-        You are an AI HR Assistant specialized in hiring Salesforce Developers.
-        Your task is to generate a quick, focused technical quiz to help HR identify the candidate's technical level before a technical interview.
-        
-        IMPORTANT: Analyze the candidate's experience level from their CV and adjust question difficulty accordingly:
-        - JUNIOR (0-2 years): Focus on basic concepts, simple scenarios, fundamental knowledge
-        - MID-LEVEL (2-5 years): Include intermediate concepts, real-world scenarios, best practices
-        - SENIOR (5+ years): Cover advanced topics, architectural decisions, complex problem-solving
-        
-        Requirements for the quiz:
-        - Include up to 5 questions, maximum.
-        - Questions should cover key Salesforce Developer skills relevant for screening:
-          - Apex (triggers, classes, bulk-safe coding).
-          - Flows vs. Apex use cases.
-          - Governor limits.
-          - Basic SOQL/DML best practices.
-          - Understanding asynchronous processing (e.g., Queueable, Future).
-        - Questions should be answerable briefly (1-3 sentences each) by the candidate in written form.
-        - Questions should be clear, simple to understand for non-technical HR, but reveal the candidate's depth.
-        - ADJUST DIFFICULTY based on the candidate's experience level mentioned in the CV.
-        - Do not generate answer keys or commentary, only the quiz.
+        user_prompt = quiz_prompt(cv_text)
+        result = self.chat(system_prompt=quiz_system_prompt(),
+                           user_prompt=user_prompt,
+                           model="gpt-3.5-turbo",
+                           max_tokens=800,
+                           temperature=0.4)
 
-        After the technical quiz, generate 1–3 additional questions to assess the candidate's soft skills and motivation for the Salesforce Developer role. Focus on:
-        - Communication and teamwork.
-        - Analytical thinking.
-        - Motivation and alignment with project needs.
-
-        These questions should also be clear, direct, and easy to answer in 1–3 sentences.
-
-        Here is the candidate's CV for context:
-        {cv_text}
-        
-        Generate ONLY the quiz as a numbered list without additional commentary.
-        """
-        
-        try:
-            response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are an expert HR assistant specialized in Salesforce Developer recruitment."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=800,
-                temperature=0.4
-            )
-            
-            quiz_text = response.choices[0].message.content
-            
-            # Parse the quiz into structured format
-            return self._parse_quiz(quiz_text)
-            
-        except Exception as e:
+        if result.startswith("Error"):
             return {
-                "technical_questions": [f"Error generating quiz: {str(e)}"],
+                "technical_questions": [f"Error generating quiz: {result}"],
                 "soft_skills_questions": []
             }
-    
+            
+        # Parse the quiz into structured format
+        return self._parse_quiz(result)
+
     def _parse_quiz(self, quiz_text):
         """
         Parse the generated quiz text into structured format

@@ -228,7 +228,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         if (result.success) {
             // Show analysis results
             document.getElementById('analysisContent').innerHTML = 
-                '<pre class="bg-light p-3 rounded">' + result.analysis + '</pre>';
+                `<pre>${JSON.stringify(result.analysis, null, 2)}</pre>`;
             
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('analysisModal'));

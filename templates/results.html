@@ -52,21 +52,33 @@
                     {% if evaluation.technical_assessment %}
                     <div class="col-md-6 mb-3">
                         <h6 class="text-primary">Technical Assessment:</h6>
-                        <p>{{ evaluation.technical_assessment }}</p>
+                        <ul>
+                        {% for key, value in evaluation.technical_assessment.items() %}
+                            <li><strong>{{ key }}:</strong> {{ value }}</li>
+                        {% endfor %}
+                        </ul>
                     </div>
                     {% endif %}
                     
                     {% if evaluation.soft_skills_assessment %}
                     <div class="col-md-6 mb-3">
                         <h6 class="text-success">Soft Skills Assessment:</h6>
-                        <p>{{ evaluation.soft_skills_assessment }}</p>
+                        <ul>
+                        {% for key, value in evaluation.soft_skills_assessment.items() %}
+                            <li><strong>{{ key }}:</strong> {{ value }}</li>
+                        {% endfor %}
+                        </ul>
                     </div>
                     {% endif %}
                     
                     {% if evaluation.interview_focus_areas %}
                     <div class="col-12 mb-3">
                         <h6 class="text-warning">Interview Focus Areas:</h6>
-                        <p>{{ evaluation.interview_focus_areas }}</p>
+                        <ul>
+                        {% for key, value in evaluation.interview_focus_areas.items() %}
+                            <li><strong>{{ key }}:</strong> {{ value }}</li>
+                        {% endfor %}
+                        </ul>
                     </div>
                     {% endif %}
                 </div>
@@ -131,10 +143,10 @@
             <div class="card-body">
                 <p class="text-muted mb-3">Download the complete evaluation report for your records or to share with team members.</p>
                 <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                    <a href="{{ url_for('export_results', session_id=session_id) }}" class="btn btn-success me-md-2">
+                    <a href="{{ url_for('export.export_json', session_id=session_id) }}" class="btn btn-success me-md-2">
                         <i class="fas fa-file-code me-2"></i>Export as JSON
                     </a>
-                    <a href="{{ url_for('export_pdf', session_id=session_id) }}" class="btn btn-info me-md-2">
+                    <a href="{{ url_for('export.export_pdf', session_id=session_id) }}" class="btn btn-info me-md-2">
                         <i class="fas fa-file-pdf me-2"></i>Export as HTML Report
                     </a>
                     <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
@@ -149,7 +161,7 @@
             <div class="card-body text-center">
                 <h5 class="mb-3">Next Steps</h5>
                 <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                    <a href="{{ url_for('new_candidate') }}" class="btn btn-primary btn-lg me-md-2">
+                    <a href="{{ url_for('candidates.new_candidate') }}" class="btn btn-primary btn-lg me-md-2">
                         <i class="fas fa-plus me-2"></i>Evaluate Another Candidate
                     </a>
                     <button type="button" class="btn btn-outline-secondary btn-lg" onclick="history.back()">
