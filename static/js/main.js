@@ -94,46 +94,171 @@ function clearSavedForm(formId) {
     localStorage.removeItem(`form_${formId}`);
 }
 
+const ACCESS_TOKEN_LIFETIME = 45 * 60 * 1000;
+const REFRESH_BEFORE_EXPIRY = 60 * 1000;
+
+function getCSRFToken() {
+    const name = "csrf_token=";
+    const parts = document.cookie.split(";");
+    for (let p of parts) {
+        const c = p.trim();
+        if (c.startsWith(name)) return c.substring(name.length);
+    }
+    return null;
+}
+
+let _refreshInProgress = null;
+
+
+async function tryRefreshToken() {
+    if (_refreshInProgress) {
+        try { return await _refreshInProgress; } catch (e) { return null; }
+    }
+
+    const csrf = getCSRFToken();
+
+    _refreshInProgress = (async () => {
+        try {
+            const res = await fetch('/auth/refresh', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {})
+                },
+                credentials: 'same-origin'
+            });
+
+            if (!res.ok) return null;
+            const data = await res.json().catch(() => ({}));
+            if (data.access_token) {
+                window.__access_token = data.access_token;
+                sessionStorage.setItem('access_token', data.access_token);
+                scheduleRefresh();
+                return data.access_token;
+            }
+            return null;
+        } finally {
+            _refreshInProgress = null;
+        }
+    })();
+
+    return _refreshInProgress;
+}
+
+function scheduleRefresh() {
+    clearTimeout(window._refreshTimer);
+    window._refreshTimer = setTimeout(() => {
+        tryRefreshToken();
+    }, ACCESS_TOKEN_LIFETIME - REFRESH_BEFORE_EXPIRY);
+}
+
+async function authFetch(url, options = {}) {
+    options.credentials = options.credentials || 'same-origin';
+    options.headers = options.headers || {};
+
+    if (window.__access_token) {
+        options.headers['Authorization'] = 'Bearer ' + window.__access_token;
+    }
+    options.headers['X-Requested-With'] = options.headers['X-Requested-With'] || 'XMLHttpRequest';
+
+    let resp = await fetch(url, options);
+
+    if (resp.status === 401) {
+        const newTok = await tryRefreshToken();
+        if (newTok) {
+            options.headers['Authorization'] = 'Bearer ' + newTok;
+            resp = await fetch(url, options);
+        } else {
+            const redirectTo = encodeURIComponent(window.location.pathname + window.location.search);
+            window.location.replace(`/auth?next=${redirectTo}`);
+            return;
+        }
+    }
+
+    return resp;
+}
+
+function hasRefreshCookie() {
+    return document.cookie.split(";").some(c => c.trim().startsWith("refresh_token="));
+}
+
+async function handleOAuthCallbackIfNeeded() {
+    if (!window.location.pathname.startsWith('/auth/authorize/')) return;
+
+    try {
+        const res = await fetch(window.location.href, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin'
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!data) return;
+
+        if (data.access_token) {
+            window.__access_token = data.access_token;
+            sessionStorage.setItem('access_token', data.access_token);
+
+            const params = new URLSearchParams(window.location.search);
+            const next = params.get('next');
+
+            window.location.replace(next || '/');
+        }
+    } catch (e) {
+        console.error('OAuth callback handling error', e);
+    }
+}
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', async () => {
+    await handleOAuthCallbackIfNeeded();
+    const pathname = window.location.pathname + (window.location.search || '');
+    window.__access_token = sessionStorage.getItem('access_token') || null;
 
-    let token = sessionStorage.getItem("access_token");
-    if (!token) {
-        token = await tryRefreshToken();
-    }
+    if (pathname.startsWith('/auth')) {
+        if (!getCSRFToken()) {
+            await fetch('/auth/csrf', {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            });
+        }
+    } else {
+        let token = window.__access_token;
+        if (!token) {
+            if (hasRefreshCookie()) {
+                token = await tryRefreshToken();
+            }
+            if (!token && !hasRefreshCookie()) {
+                const redirectTo = encodeURIComponent(pathname);
+                window.location.replace(`/auth?next=${redirectTo}`);
+                return;
+            }
+        }
 
-    if (!token) {
-        window.location.replace("/auth");
-        return;
-    }
+        // Add fade-in animation to main content
+        const mainContent = document.querySelector('main .container');
+        if (mainContent) {
+            mainContent.classList.add('fade-in-up');
+        }
 
-    // Add fade-in animation to main content
-    const mainContent = document.querySelector('main .container');
-    if (mainContent) {
-        mainContent.classList.add('fade-in-up');
-    }
-    
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // Auto-save quiz form
-    autoSaveForm('quizForm');
-    
-    // Clear saved data when starting new candidate
-    const newCandidateLink = document.querySelector('a[href*="new_candidate"]');
-    if (newCandidateLink) {
-        newCandidateLink.addEventListener('click', function() {
-            clearSavedForm('quizForm');
+        // Initialize tooltips
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+
+        // Auto-save quiz form
+        autoSaveForm('quizForm');
+
+        // Clear saved data when starting new candidate
+        const newCandidateLink = document.querySelector('a[href*="new_candidate"]');
+        if (newCandidateLink) {
+            newCandidateLink.addEventListener('click', function() {
+                clearSavedForm('quizForm');
+            });
+        }
+        scheduleRefresh();
     }
-
-    setInterval(() => {
-        tryRefreshToken();
-    }, 10 * 60 * 1000);
-
 });
 
 // Global error handler
@@ -147,59 +272,3 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Unhandled promise rejection:', e.reason);
     showAlert('An unexpected error occurred. Please try again.', 'danger');
 });
-
-function getCSRFToken() {
-    const name = "csrf_token=";
-    const parts = document.cookie.split(";");
-    for (let p of parts) {
-        const c = p.trim();
-        if (c.startsWith(name)) return c.substring(name.length);
-    }
-    return null;
-}
-
-async function tryRefreshToken() {
-    const csrf = getCSRFToken();
-
-    const res = await fetch("/refresh", {
-        method: "POST",
-        headers: {
-            "X-Requested-With": "XMLHttpRequest",
-            ...(csrf ? { "X-CSRF-TOKEN": csrf } : {})
-        }
-    });
-
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    if (data.access_token) {
-        window.__access_token = data.access_token;
-        return data.access_token;
-    }
-
-    return null;
-}
-
-async function authFetch(url, options = {}) {
-    if (!options.headers) options.headers = {};
-
-    if (window.__access_token) {
-        options.headers["Authorization"] = "Bearer " + window.__access_token;
-    }
-
-    let response = await fetch(url, options);
-
-    if (response.status === 401) {
-        const newToken = await tryRefreshToken();
-
-        if (newToken) {
-            options.headers["Authorization"] = "Bearer " + newToken;
-            response = await fetch(url, options);
-        } else {
-            window.location.href = "/auth";
-            return;
-        }
-    }
-
-    return response;
-}

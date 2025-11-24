@@ -1,3 +1,5 @@
+import secrets
+
 from flask import Blueprint, request, jsonify, render_template, current_app
 from auth.controllers import AuthManager
 
@@ -9,7 +11,15 @@ def get_controller():
     return current_app.extensions["auth_manager"]
 
 
-@bp.route("/auth", methods=["GET"])
+@bp.route("/csrf", methods=["GET"])
+def get_csrf():
+    csrf = secrets.token_urlsafe(32)
+    resp = jsonify({"csrf": csrf})
+    resp.set_cookie("csrf_token", csrf, secure=False, samesite="Lax")
+    return resp
+
+
+@bp.route("/", methods=["GET"])
 def auth_page():
     return render_template("auth.html")
 

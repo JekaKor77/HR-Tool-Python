@@ -1,4 +1,5 @@
 import hashlib
+import uuid
 from datetime import timedelta, datetime
 import bcrypt
 
@@ -23,7 +24,8 @@ def create_token(data: dict, token_type: str, expires_delta: timedelta | None = 
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({
         "exp": expire,
-        "type": token_type
+        "type": token_type,
+        "jti": str(uuid.uuid4())
     })
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt

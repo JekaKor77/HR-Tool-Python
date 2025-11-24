@@ -23,7 +23,7 @@ class AuthService:
         user = UserRepository.register_user(user_data)
 
         cookies = CookiePack()
-        cookies.set("csrf_token", csrf, secure=True, samesite="Lax")
+        cookies.set("csrf_token", csrf, secure=False, samesite="Lax")
 
         return {"message": "User registered", "user": user}, cookies
 
@@ -45,14 +45,14 @@ class AuthService:
             "refresh_token",
             refresh,
             httponly=True,
-            secure=True,
+            secure=False,
             samesite="Strict",
             path="/auth/refresh"
         )
         cookies.set(
             "csrf_token",
             self.tokens.make_csrf(),
-            secure=True,
+            secure=False,
             samesite="Lax"
         )
 
@@ -97,14 +97,14 @@ class AuthService:
             "refresh_token",
             new_refresh,
             httponly=True,
-            secure=True,
+            secure=False,
             samesite="Strict",
             path="/auth/refresh"
         )
         cookies.set(
             "csrf_token",
             self.tokens.make_csrf(),
-            secure=True,
+            secure=False,
             samesite="Lax"
         )
 
@@ -137,14 +137,14 @@ class AuthService:
             "refresh_token",
             new_refresh,
             httponly=True,
-            secure=True,
+            secure=False,
             samesite="Strict",
             path="/auth/refresh"
         )
         cookies.set(
             "csrf_token",
             self.tokens.make_csrf(),
-            secure=True,
+            secure=False,
             samesite="Lax"
         )
 

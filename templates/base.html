@@ -47,11 +47,4 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    setInterval(() => {
-        tryRefreshToken();
-    }, 10 * 60 * 1000);
-});
-</script>
 </html>

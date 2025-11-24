@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify, request, redirect, make_response
 from .services.auth_service import AuthService
 
 
@@ -48,6 +48,21 @@ class AuthManager:
 
     def oauth_callback(self, provider):
         result, cookies = self.service.oauth_callback(provider)
-        response = jsonify(result)
+        token = result.get('access_token', '')
+
+        html = f"""
+            <html>
+              <body>
+                <script>
+                    sessionStorage.setItem('access_token', "{token}");
+                    const params = new URLSearchParams(window.location.search);
+                    const next = params.get('next') || '/';
+                    window.location.replace(next);
+                </script>
+              </body>
+            </html>
+            """
+
+        response = make_response(html)
         cookies.apply_to(response)
         return response

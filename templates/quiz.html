@@ -108,7 +108,7 @@ document.getElementById('quizForm').addEventListener('submit', async function(e)
     errorDiv.style.display = 'none';
     
     try {
-        const response = await fetch('/evaluate', {
+        const response = await authFetch('/evaluate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

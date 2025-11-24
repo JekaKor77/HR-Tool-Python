@@ -1,7 +1,7 @@
 import secrets
 from datetime import datetime, timedelta
 
-from authlib.jose import jwt
+import jwt
 from flask import request
 
 from app_config import settings

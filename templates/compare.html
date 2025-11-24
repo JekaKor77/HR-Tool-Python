@@ -162,7 +162,7 @@ document.getElementById('compareForm').addEventListener('submit', async function
     errorDiv.style.display = 'none';
     
     try {
-        const response = await fetch('/compare/upload_compare', {
+        const response = await authFetch('/compare/upload_compare', {
             method: 'POST',
             body: formData
         });

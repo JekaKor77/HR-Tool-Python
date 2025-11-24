@@ -12,7 +12,7 @@
                     <h3 class="mb-0"><i class="fas fa-user-lock me-2"></i>Login</h3>
                 </div>
                 <div class="card-body">
-                    <form id="loginForm">
+                    <form id="loginForm" novalidate>
                         <div class="mb-3">
                             <label for="loginEmail" class="form-label">Email</label>
                             <input type="email" class="form-control" id="loginEmail" required autocomplete="email">
@@ -24,7 +24,7 @@
                         </div>
 
                         <div class="d-grid mb-3">
-                            <button type="submit" class="btn btn-primary btn-lg">
+                            <button type="submit" class="btn btn-primary btn-lg" id="loginBtn">
                                 <i class="fas fa-sign-in-alt me-2"></i>Login
                             </button>
                         </div>
@@ -32,15 +32,14 @@
 
                     <div class="text-center mt-3">
                         <small class="text-muted">Or login with:</small>
-
                         <div class="d-flex justify-content-center mt-3 gap-2">
-                            <a href="/login/google" class="btn btn-outline-danger">
+                            <a href="{{ url_for('auth.oauth_login', provider='google') }}" class="btn btn-outline-danger">
                                 <i class="fab fa-google me-1"></i> Google
                             </a>
-                            <a href="/login/github" class="btn btn-outline-dark">
+                            <a href="{{ url_for('auth.oauth_login', provider='github') }}" class="btn btn-outline-dark">
                                 <i class="fab fa-github me-1"></i> GitHub
                             </a>
-                            <a href="/login/linkedin" class="btn btn-outline-primary">
+                            <a href="{{ url_for('auth.oauth_login', provider='linkedin') }}" class="btn btn-outline-primary">
                                 <i class="fab fa-linkedin me-1"></i> LinkedIn
                             </a>
                         </div>
@@ -54,7 +53,7 @@
                     <h3 class="mb-0"><i class="fas fa-user-plus me-2"></i>Register</h3>
                 </div>
                 <div class="card-body">
-                    <form id="registerForm">
+                    <form id="registerForm" novalidate>
                         <div class="mb-3">
                             <label for="firstName" class="form-label">First Name</label>
                             <input type="text" class="form-control" id="firstName" required autocomplete="given-name">
@@ -76,7 +75,7 @@
                         </div>
 
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-success btn-lg">
+                            <button type="submit" class="btn btn-success btn-lg" id="registerBtn">
                                 <i class="fas fa-user-plus me-2"></i>Register
                             </button>
                         </div>
@@ -96,79 +95,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-/* ------------------------------------------------------
-   Helper to fetch with CSRF header for /refresh
------------------------------------------------------- */
-function getCSRFToken() {
-    const name = "csrf_token=";
-    const decoded = decodeURIComponent(document.cookie);
-    const parts = decoded.split(';');
-    for (let p of parts) {
-        let c = p.trim();
-        if (c.indexOf(name) === 0) return c.substring(name.length, c.length);
-    }
-    return null;
-}
-
-/* ------------------------------------------------------
-   Error handler
------------------------------------------------------- */
-function showError(message) {
-    document.getElementById("errorMessage").textContent = message;
-    document.getElementById("authError").classList.remove("d-none");
-}
-
-/* ------------------------------------------------------
-   Universal handler for login & register
------------------------------------------------------- */
-async function handleAuth(endpoint, payload) {
-    try {
-        const res = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-Requested-With": "XMLHttpRequest"
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-
-
-        if (res.ok && data.access_token) {
-            sessionStorage.setItem("access_token", data.access_token);
-            window.location.replace("/");
-        } else {
-            showError(data.error || "Authentication failed");
-        }
-
-    } catch (err) {
-        showError("Network error: " + err.message);
-    }
-}
-
-/* ------------------------------------------------------
-   Forms
------------------------------------------------------- */
-document.getElementById("loginForm").addEventListener("submit", e => {
-    e.preventDefault();
-    handleAuth("/login", {
-        email: document.getElementById("loginEmail").value,
-        password: document.getElementById("loginPassword").value
-    });
-});
-
-document.getElementById("registerForm").addEventListener("submit", e => {
-    e.preventDefault();
-    handleAuth("/register", {
-        first_name: document.getElementById("firstName").value,
-        last_name: document.getElementById("lastName").value,
-        email: document.getElementById("registerEmail").value,
-        password: document.getElementById("registerPassword").value
-    });
-});
-</script>
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 {% endblock %}
 
 {% block styles %}
