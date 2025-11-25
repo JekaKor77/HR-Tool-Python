@@ -127,17 +127,17 @@
                 <div class="card-body">
                     {% if comparison_data.questions %}
                         <div class="questions-list">
-                            {% for question in comparison_data.questions %}
-                                <div class="question-item mb-3 p-3 border rounded">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <span class="badge bg-{% if question.priority == 'high' %}danger{% elif question.priority == 'medium' %}warning{% else %}secondary{% endif %}">
-                                            {{ question.priority }}
+                            {% for q in comparison_data.questions %}
+                                <div class="question-item mb-3 p-3 border rounded shadow-sm">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-{% if q.priority == 'high' %}danger{% elif q.priority == 'medium' %}warning{% else %}secondary{% endif %}">
+                                            {{ q.priority|capitalize }}
                                         </span>
-                                        <small class="text-muted">{{ question.category }}</small>
+                                        <small class="text-muted">{{ q.category|replace('_', ' ')|capitalize }}</small>
                                     </div>
-                                    <p class="mb-2">{{ question.question }}</p>
-                                    {% if question.context %}
-                                        <small class="text-muted">{{ question.context }}</small>
+                                    <p class="mb-2 fw-bold">{{ q.question }}</p>
+                                    {% if q.context %}
+                                        <small class="text-muted"><i class="fas fa-info-circle me-1"></i>{{ q.context }}</small>
                                     {% endif %}
                                 </div>
                             {% endfor %}
@@ -215,11 +215,11 @@ function exportResults() {
 }
 
 function exportAsJSON() {
-    window.open(`/export/${session_id}`, '_blank');
+    window.open(`/export/json/${session_id}`, '_blank');
 }
 
 function exportAsPDF() {
-    window.open(`/export_pdf/${session_id}`, '_blank');
+    window.open(`/export/pdf/${session_id}`, '_blank');
 }
 
 function copyQuestions() {

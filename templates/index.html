@@ -218,7 +218,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
     errorDiv.style.display = 'none';
     
     try {
-        const response = await fetch('/upload', {
+        const response = await authFetch('/upload', {
             method: 'POST',
             body: formData
         });
@@ -228,7 +228,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         if (result.success) {
             // Show analysis results
             document.getElementById('analysisContent').innerHTML = 
-                '<pre class="bg-light p-3 rounded">' + result.analysis + '</pre>';
+                renderAnalysisHTML(result.analysis);
             
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('analysisModal'));
@@ -251,6 +251,66 @@ document.getElementById('proceedToQuiz').addEventListener('click', function() {
 function showError(message) {
     document.getElementById('errorMessage').textContent = message;
     document.getElementById('uploadError').style.display = 'block';
+}
+
+function renderAnalysisHTML(data) {
+    const sections = [];
+
+    // Personal Info
+    sections.push(`
+        <h5><i class="fas fa-user me-2"></i>Personal information</h5>
+        <p><strong>Name:</strong> ${data.first_name || '-'} ${data.last_name || ''}</p>
+        <p><strong>Email:</strong> ${data.email || '-'}</p>
+        <p><strong>Phone number:</strong> ${data.phone || '-'}</p>
+        <hr>
+    `);
+
+    // Education
+    if (data.education) {
+        sections.push(`
+            <h5><i class="fas fa-graduation-cap me-2"></i>Education</h5>
+            <p>${data.education}</p>
+            <hr>
+        `);
+    }
+
+    // Technical Skills
+    if (data.technical_skills?.length) {
+        sections.push(`
+            <h5><i class="fas fa-tools me-2"></i>Technical skills</h5>
+            <ul>${data.technical_skills.map(s => `<li>${s}</li>`).join('')}</ul>
+            <hr>
+        `);
+    }
+
+    // Strengths
+    if (data.strengths?.length) {
+        sections.push(`
+            <h5><i class="fas fa-thumbs-up me-2"></i>Strengths</h5>
+            <ul>${data.strengths.map(s => `<li>${s}</li>`).join('')}</ul>
+            <hr>
+        `);
+    }
+
+    // Gaps
+    if (data.gaps?.length) {
+        sections.push(`
+            <h5><i class="fas fa-exclamation-circle me-2"></i>Gaps</h5>
+            <ul>${data.gaps.map(s => `<li>${s}</li>`).join('')}</ul>
+            <hr>
+        `);
+    }
+
+    // Projects
+    if (data.projects?.length) {
+        sections.push(`
+            <h5><i class="fas fa-project-diagram me-2"></i>Projects</h5>
+            <ul>${data.projects.map(p => `<li>${p}</li>`).join('')}</ul>
+            <hr>
+        `);
+    }
+
+    return sections.join("\n");
 }
 </script>
 

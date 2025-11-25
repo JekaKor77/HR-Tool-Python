@@ -41,13 +41,13 @@ def test_config():
     print("\nTesting configuration...")
     
     try:
-        from config import Config
+        from app_config import settings
         print("✓ Config class loaded successfully")
         
         # Check if required attributes exist
         required_attrs = ['SECRET_KEY', 'OPENAI_API_KEY', 'UPLOAD_FOLDER', 'MAX_CONTENT_LENGTH']
         for attr in required_attrs:
-            if hasattr(Config, attr):
+            if hasattr(settings, attr):
                 print(f"✓ {attr} configured")
             else:
                 print(f"✗ {attr} missing")

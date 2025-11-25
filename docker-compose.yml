@@ -1,0 +1,92 @@
+version: "3.9"
+
+services:
+  postgres:
+    build: ./db
+    container_name: hr_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_ROOT_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      TEST_DB_USER: ${TEST_DB_USER}
+      TEST_DB_PASS: ${TEST_DB_PASS}
+      TEST_DB_NAME: ${TEST_DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - hr_network
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - hr_network
+
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - hr_network
+
+  api:
+    build: .
+    container_name: hr_api
+    command: python app.py
+    environment:
+      CELERY_BROKER_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672/${RABBITMQ_VHOST}
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      - rabbitmq
+      - redis
+      - postgres
+    ports:
+      - "5000:5000"
+    networks:
+      - hr_network
+
+  celery:
+    build: .
+    container_name: hr_celery
+    command: celery -A celery_app.worker.celery worker --loglevel=INFO --pool=eventlet
+    environment:
+      CELERY_BROKER_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672/${RABBITMQ_VHOST}
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      - rabbitmq
+      - redis
+      - postgres
+    networks:
+      - hr_network
+
+networks:
+  hr_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
