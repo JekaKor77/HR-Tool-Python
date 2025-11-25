@@ -53,7 +53,8 @@ class AuthService:
             "csrf_token",
             self.tokens.make_csrf(),
             secure=False,
-            samesite="Lax"
+            samesite="Lax",
+            path="/"
         )
 
         return {"access_token": access}, cookies
@@ -105,7 +106,8 @@ class AuthService:
             "csrf_token",
             self.tokens.make_csrf(),
             secure=False,
-            samesite="Lax"
+            samesite="Lax",
+            path="/"
         )
 
         return {"access_token": new_access}, cookies
@@ -145,7 +147,8 @@ class AuthService:
             "csrf_token",
             self.tokens.make_csrf(),
             secure=False,
-            samesite="Lax"
+            samesite="Lax",
+            path="/"
         )
 
         return {"access_token": new_access}, cookies

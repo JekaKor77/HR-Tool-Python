@@ -5,10 +5,10 @@ def comparison_prompt(cv1_text: str, cv2_text: str, cv1_name: str, cv2_name) -> 
         You are an expert HR analyst specializing in CV comparison and candidate evaluation. 
         Compare the following two CVs and identify key differences, gaps, and potential inconsistencies.
         
-        CV 1 ({cv1_name}):
+        {cv1_name}:
         {cv1_text}
         
-        CV 2 ({cv2_name}):
+        {cv2_name}:
         {cv2_text}
         
         Please provide a comprehensive comparison analysis including:

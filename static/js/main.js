@@ -208,6 +208,61 @@ async function handleOAuthCallbackIfNeeded() {
     }
 }
 
+function renderLogoutButton() {
+    const accessToken = sessionStorage.getItem('access_token') || window.__access_token;
+    if (!accessToken) return;
+
+    const nav = document.querySelector('.navbar-nav.ms-auto');
+    if (!nav || document.getElementById('logoutForm')) return;
+
+    const form = document.createElement('form');
+    form.id = 'logoutForm';
+    form.className = 'd-inline ms-2';
+    form.method = 'POST';
+    form.action = '/auth/logout';
+    form.innerHTML = `
+        <button type="submit" class="btn btn-outline-light btn-sm">
+            <i class="fas fa-sign-out-alt me-1"></i>Logout
+        </button>
+    `;
+    nav.appendChild(form);
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        let csrf = getCSRFToken();
+        if (!csrf) {
+            // делаем fetch, чтобы установить куку
+            await fetch('/auth/csrf', {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            });
+            // читаем токен снова
+            csrf = getCSRFToken();
+        }
+
+        if (!csrf) {
+            console.error("CSRF token still not found!");
+            return;
+        }
+
+        try {
+            await fetch(form.action, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-CSRF-TOKEN': csrf
+                }
+            });
+            sessionStorage.removeItem('access_token');
+            window.location.href = '/';
+        } catch (err) {
+            console.error('Logout failed', err);
+        }
+    });
+}
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', async () => {
     await handleOAuthCallbackIfNeeded();
@@ -258,6 +313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
         scheduleRefresh();
+        renderLogoutButton();
     }
 });
 

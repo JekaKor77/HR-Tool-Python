@@ -1,4 +1,6 @@
 from flask import jsonify, request, redirect, make_response
+
+from .exceptions import CSRFError
 from .services.auth_service import AuthService
 
 
@@ -26,10 +28,22 @@ class AuthManager:
         return response
 
     def logout(self):
-        result, cookies = self.service.logout()
-        response = jsonify(result)
-        cookies.apply_to(response)
-        return response
+        print("=== Logout called ===")
+        print("Request cookies:", request.cookies)
+        print("Request headers:", request.headers)
+
+        try:
+            result, cookies = self.service.logout()
+            response = jsonify(result)
+            cookies.apply_to(response)
+            print("Logout successful, cookies applied:", cookies.cookies)
+            return response
+        except CSRFError:
+            print("CSRF validation failed!")
+            raise
+        except Exception as e:
+            print("Logout failed with exception:", e)
+            raise
 
     def logout_all(self):
         result, cookies = self.service.logout_all()

@@ -95,9 +95,7 @@
                 </h4>
             </div>
             <div class="card-body">
-                <div class="bg-light p-3 rounded">
-                    <pre style="white-space: pre-wrap; font-family: inherit;">{{ analysis }}</pre>
-                </div>
+                <div id="analysisContainer" class="bg-light p-3 rounded"></div>
             </div>
         </div>
         {% endif %}
@@ -176,12 +174,79 @@
 
 {% block scripts %}
 <script>
-// Auto-scroll to top when page loads
-window.scrollTo(0, 0);
-
-// Add some visual enhancements
 document.addEventListener('DOMContentLoaded', function() {
-    // Add animation to cards
+    // --- 1. Render analysis dynamically ---
+    const analysisJson = '{{ analysis|tojson|safe }}';
+    const analysisData = analysisJson ? JSON.parse(analysisJson) : null;
+    const container = document.getElementById("analysisContainer");
+
+    if (analysisData && container) {
+
+        function createCard(title, items, type = 'list', colorClass = 'primary') {
+            const card = document.createElement("div");
+            card.className = `card mb-3 shadow-sm border-${colorClass}`;
+
+            const header = document.createElement("div");
+            header.className = `card-header bg-${colorClass} text-white`;
+            header.textContent = title;
+            card.appendChild(header);
+
+            const body = document.createElement("div");
+            body.className = "card-body";
+
+            if (type === 'list' && Array.isArray(items)) {
+                const ul = document.createElement("ul");
+                ul.className = "list-group list-group-flush";
+                items.forEach(item => {
+                    const li = document.createElement("li");
+                    li.className = "list-group-item";
+                    li.textContent = item;
+                    ul.appendChild(li);
+                });
+                body.appendChild(ul);
+            } else if (type === 'object' && typeof items === 'object') {
+                for (const [key, value] of Object.entries(items)) {
+                    const p = document.createElement("p");
+                    p.innerHTML = `<strong>${key}:</strong> ${value}`;
+                    body.appendChild(p);
+                }
+            } else if (type === 'text') {
+                body.textContent = items;
+            }
+
+            card.appendChild(body);
+            return card;
+        }
+
+        // Personal Info + Education + Experience
+        const personalInfo = {
+            "Name": (analysisData.first_name || '-') + " " + (analysisData.last_name || '-'),
+            "Email": analysisData.email || '-',
+            "Phone": analysisData.phone || '-',
+            "Education": analysisData.education || '-',
+            "Years of Experience": analysisData.years_experience || '0',
+            "Technical Level": analysisData.technical_level || 'Unknown'
+        };
+        container.appendChild(createCard("Personal Info", personalInfo, 'object', 'info'));
+
+        // Lists
+        const lists = [
+            {title: "Technical Skills", data: analysisData.technical_skills, color: 'secondary'},
+            {title: "Certifications", data: analysisData.certifications, color: 'warning'},
+            {title: "Roles / Experience", data: analysisData.roles, color: 'success'},
+            {title: "Projects", data: analysisData.projects, color: 'dark'},
+            {title: "Strengths", data: analysisData.strengths, color: 'success'},
+            {title: "Gaps", data: analysisData.gaps, color: 'danger'}
+        ];
+
+        lists.forEach(l => {
+            if (l.data && l.data.length > 0) {
+                container.appendChild(createCard(l.title, l.data, 'list', l.color));
+            }
+        });
+    }
+
+    // --- 2. Existing animation for cards ---
     const cards = document.querySelectorAll('.card');
     cards.forEach((card, index) => {
         card.style.opacity = '0';

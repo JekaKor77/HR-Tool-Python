@@ -14,11 +14,15 @@ class TokenService:
     def check_csrf(self):
         csrf_cookie = request.cookies.get("csrf_token")
         csrf_header = request.headers.get("X-CSRF-TOKEN")
+        print("CSRF check: cookie =", csrf_cookie, ", header =", csrf_header)
         if csrf_cookie != csrf_header:
+            print("CSRF mismatch!")
             raise CSRFError()
 
     def get_refresh_from_request(self):
-        return request.cookies.get("refresh_token")
+        refresh = request.cookies.get("refresh_token")
+        print("Refresh token from request:", refresh)
+        return refresh
 
     def create_access(self, user_id: str):
         return create_access_token({"sub": user_id})
